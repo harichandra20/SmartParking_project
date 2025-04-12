@@ -1,5 +1,7 @@
 const Reservation = require('../models/ReservationModel');
 const ParkingSlot = require('../models/ParkingSlotModel');
+const SecurityGuard = require('../models/SecurityGuardModel');
+const bcrypt = require('bcryptjs');
 
 const verifyReservation = async (req, res) => {
   try {
@@ -81,4 +83,45 @@ const verifyReservation = async (req, res) => {
   }
 };
 
-module.exports = { verifyReservation };
+
+
+const createSecurityGuard = async (req, res) => {
+  try {
+    const { name, parkingId, email, password } = req.body;
+   
+    // Validate input
+    if (!name || !parkingId || !email || !password) {
+      return res.status(400).json({ success: false, message: 'All fields (name, parkingId, email, password) are required' });
+    }
+
+    // Check if email already exists
+    const existingGuard = await SecurityGuard.findOne({ email });
+    if (existingGuard) {
+      return res.status(400).json({ success: false, message: 'Email already exists' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new security guard
+    const securityGuard = await SecurityGuard.create({
+      name,
+      parkingId,
+      email,
+      password: hashedPassword,
+    });
+
+    res.status(201).json({ success: true, message: 'Security guard created successfully', data: securityGuard });
+  } catch (error) {
+    console.error('Create Security Guard Error:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body,
+    });
+    res.status(500).json({ success: false, message: 'Internal server error', details: error.stack });
+  }
+};
+
+
+module.exports = { verifyReservation ,createSecurityGuard};

@@ -98,7 +98,7 @@ app.use('/payment', paymentRoutes);
 app.use('/parking', auth, parkingRoutes); // Protected
 app.use('/vehicles', auth, vehicleRoutes); // Protected
 app.use('/reservations', auth, reservationRoutes); // Protected
- app.use('/security-guard', auth ,securityGuardRoutes); // protected
+ app.use('/security-guard',auth,securityGuardRoutes); // protected
 
 // MongoDB connection without deprecated options
 mongoose.connect("mongodb://127.0.0.1:27017/smartParking")

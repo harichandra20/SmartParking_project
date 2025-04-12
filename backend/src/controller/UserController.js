@@ -70,6 +70,7 @@
 
 // module.exports = { signup, deleteUser, getoneUser, getAllUser, login, updateUser };
 const User = require('../models/UserModel');
+const SecurityGuard = require('../models/SecurityGuardModel')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
@@ -189,12 +190,14 @@ const verifyToken = async (req, res) => {
 //   }
 // };
 // Login function mein token generation ka code update karo
+
 const login = async (req, res) => { 
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
 
   try {
     const { email, password } = req.body;
+    console.log("this is login email",email);
     //console.log('Login attempt:', { email, password });
 
     const user = await User.findOne({ email });
@@ -205,8 +208,22 @@ const login = async (req, res) => {
     //console.log('Password match result:', isMatch);
     if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid credentials' });
 
-    // Token expiry ko 7 days karo
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    let parkingId = null;
+    // Check if user is a security guard
+    const securityGuard = await SecurityGuard.findOne({ email });
+    if (securityGuard) {
+       console.log("this is the security Gard mail",securityGuard.email)
+      parkingId = securityGuard.parkingId; // Fetch parkingId from SecurityGuard model
+      console.log('Security guard detected, parkingId:', parkingId); // Debug
+    }
+
+    // Generate token with parkingId only if security guard
+    const tokenPayload = { id: user._id, role: user.role };
+    if (parkingId) {
+      tokenPayload.parkingId = parkingId; // Add parkingId only for security guards
+    }
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -214,6 +231,7 @@ const login = async (req, res) => {
       userId: user._id,
       role: user.role,
       fullName: user.fullName,
+      ...(parkingId && { parkingId }), // Add parkingId in response only for security guards
     });
   } catch (error) {
     console.error('Login error:', error);

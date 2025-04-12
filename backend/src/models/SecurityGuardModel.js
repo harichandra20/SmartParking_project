@@ -5,11 +5,6 @@ const securityGuardSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  guardId: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   parkingId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'addParking',
